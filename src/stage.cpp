@@ -10,7 +10,6 @@
 //#define DEBUG_MEM
 
 void StageIF::work() {
-    if (ctx->pc > 0x10 && ctx->pc < 0x1000) exit(1);
 
     nxtBuffer.ins = ctx->memory->get4Byte(ctx->pc);
 

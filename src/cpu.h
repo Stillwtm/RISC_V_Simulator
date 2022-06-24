@@ -71,9 +71,7 @@ public:
     }
 
     void init(std::istream& inStream) {
-        debugPrint("in cpu init");
         memory->readData(inStream);
-        debugPrint("out cpu init");
     }
 
     void run() {
@@ -88,7 +86,7 @@ public:
             WB->preBuffer = MEM->nxtBuffer;
             WB->work();
         }
-        debugPrint("stop All!");
+//        debugPrint("stop All!");
 //            debugPrint(stage[1]->nxtBuffer.insCode, "  imm:", stage[1]->nxtBuffer.imm);
 
 //        while (!stopAll) {

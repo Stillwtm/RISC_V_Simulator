@@ -7,6 +7,7 @@
 
 //#define DEBUG_IF
 //#define DEBUG_ID
+//#define DEBUG_MEM
 
 void StageIF::work() {
     if (ctx->pc > 0x10 && ctx->pc < 0x1000) exit(1);
@@ -15,6 +16,10 @@ void StageIF::work() {
 
 #ifdef DEBUG_IF
     std::cout << std::hex << ctx->pc << "   " << nxtBuffer.ins << std::endl;
+//    if (ctx->pc == 0x1024) {
+//        debugPrint("stop meeting 1024!");
+//        exit(1);
+//    }
 #endif
 }
 
@@ -61,7 +66,7 @@ void StageEX::work() {
 
     // 退出
     if (preBuffer.ins == 0x0ff00513u) {
-        std::cout << std::dec << ctx->reg->at(10) << std::endl;
+        std::cout << std::dec << (ctx->reg->at(10) & 0xffu) << std::endl;
         ctx->stopAll = true;
     }
 
@@ -189,6 +194,10 @@ void StageMEM::work() {
     nxtBuffer.insCode = preBuffer.insCode;
     nxtBuffer.rd = preBuffer.rd;
 
+#ifdef DEBUG_MEM
+    debugPrint("MEM: memPos:", preBuffer.res1);
+#endif
+
     switch (preBuffer.insCode) {
         case LB:
             nxtBuffer.res = ctx->memory->at(preBuffer.res1);
@@ -198,6 +207,12 @@ void StageMEM::work() {
             break;
         case LW:
             nxtBuffer.res = ctx->memory->get4Byte(preBuffer.res1);
+            break;
+        case LBU:
+            nxtBuffer.res = ctx->memory->at(preBuffer.res1);
+            break;
+        case LHU:
+            nxtBuffer.res = ctx->memory->get2Byteu(preBuffer.res1);
             break;
         case SB:
             ctx->memory->modify(preBuffer.res1, (preBuffer.rv2 & 0xffu));

@@ -192,14 +192,18 @@ namespace STORAGE {
         }
     };
 
-    class Memory : public Storage<u8, 65536> {
+    class Memory : public Storage<u8, 524288> {
     public:
         Memory() = default;
         ~Memory() = default;
 
-        u32 get2Byte(u32 ptr) {  // 符号位扩展后返回
+        u32 get2Byte(u32 ptr) {  // 符号扩展后返回
             i32 ret = data[ptr] + (data[ptr + 1] << 8);
             return (ret << 16) >> 16;
+        }
+
+        u32 get2Byteu(u32 ptr) {  // 无符号扩展后返回
+            return data[ptr] + (data[ptr + 1] << 8);
         }
 
         u32 get4Byte(u32 ptr) {  // 小端

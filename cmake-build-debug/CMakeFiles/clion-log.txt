@@ -1,0 +1,4 @@
+C:\Users\StillMe\AppData\Local\JetBrains\CLion2021.3\cygwin_cmake\bin\cmake.exe -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/cygdrive/d/ProgramFiles/PyCharm/apps/CLion/ch-0/213.6777.58/bin/ninja/cygwin/ninja.exe -G Ninja "/cygdrive/d/Documents/C++ Projects/RISC-V-Simulator"
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /cygdrive/d/Documents/C++ Projects/RISC-V-Simulator/cmake-build-debug

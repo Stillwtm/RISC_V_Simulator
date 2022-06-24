@@ -1,0 +1,4 @@
+/cygdrive/d/Documents/C++ Projects/RISC-V-Simulator/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/cygdrive/d/Documents/C++ Projects/RISC-V-Simulator/cmake-build-debug/CMakeFiles/RISC_V_Simulator.dir
+/cygdrive/d/Documents/C++ Projects/RISC-V-Simulator/cmake-build-debug/CMakeFiles/edit_cache.dir
+/cygdrive/d/Documents/C++ Projects/RISC-V-Simulator/cmake-build-debug/CMakeFiles/stage.dir

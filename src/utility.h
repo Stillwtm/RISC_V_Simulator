@@ -172,11 +172,9 @@ namespace STORAGE {
         void readData(std::istream& inStream) {
             std::string inStr;
             u32 pos = 0;
-            while (true) {
+            while (!(inStream >> inStr).eof()) {
 //                std::cout << pos << " ";
 //                std::cout << inStr << std::endl;
-                inStream >> inStr;
-                if (!inStream) break;
                 if (inStr[0] == '@') {
                     pos = std::stoul(inStr.substr(1, 8), nullptr, 16);
                 } else {

@@ -2,10 +2,10 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "RISC_V_Simulator.exe"
+			"path" : "code.exe"
 		},
 		{
-			"path" : "RISC_V_Simulator.pdb"
+			"path" : "code.pdb"
 		}
 	],
 	"backtrace" : 1,
@@ -87,7 +87,7 @@
 			"id" : "stage::@6890427a1f51a3e7e1df"
 		}
 	],
-	"id" : "RISC_V_Simulator::@6890427a1f51a3e7e1df",
+	"id" : "code::@6890427a1f51a3e7e1df",
 	"link" : 
 	{
 		"commandFragments" : 
@@ -103,8 +103,8 @@
 		],
 		"language" : "CXX"
 	},
-	"name" : "RISC_V_Simulator",
-	"nameOnDisk" : "RISC_V_Simulator.exe",
+	"name" : "code",
+	"nameOnDisk" : "code.exe",
 	"paths" : 
 	{
 		"build" : ".",

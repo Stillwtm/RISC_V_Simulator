@@ -7,6 +7,6 @@ include_directories(src)
 
 add_library(stage OBJECT src/stage.cpp)
 
-add_executable(RISC_V_Simulator src/main.cpp)
+add_executable(code src/main.cpp)
 
-target_link_libraries(RISC_V_Simulator stage)
+target_link_libraries(code stage)

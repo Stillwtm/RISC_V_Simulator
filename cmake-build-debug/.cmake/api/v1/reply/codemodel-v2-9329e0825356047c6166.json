@@ -40,9 +40,9 @@
 			[
 				{
 					"directoryIndex" : 0,
-					"id" : "RISC_V_Simulator::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-RISC_V_Simulator-Debug-fb13862590cd14a19f67.json",
-					"name" : "RISC_V_Simulator",
+					"id" : "code::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-code-Debug-bb6a243a0e2fa0850d79.json",
+					"name" : "code",
 					"projectIndex" : 0
 				},
 				{

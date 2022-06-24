@@ -53,38 +53,38 @@ build CMakeFiles/rebuild_cache.util: CUSTOM_COMMAND
 build rebuild_cache: phony CMakeFiles/rebuild_cache.util
 
 # =============================================================================
-# Object build statements for EXECUTABLE target RISC_V_Simulator
+# Object build statements for EXECUTABLE target code
 
 
 #############################################
-# Order-only phony target for RISC_V_Simulator
+# Order-only phony target for code
 
-build cmake_object_order_depends_target_RISC_V_Simulator: phony || cmake_object_order_depends_target_stage
+build cmake_object_order_depends_target_code: phony || cmake_object_order_depends_target_stage
 
-build CMakeFiles/RISC_V_Simulator.dir/src/main.cpp.o: CXX_COMPILER__RISC_V_Simulator_Debug /cygdrive/d/Documents/C++$ Projects/RISC-V-Simulator/src/main.cpp || cmake_object_order_depends_target_RISC_V_Simulator
-  DEP_FILE = CMakeFiles/RISC_V_Simulator.dir/src/main.cpp.o.d
+build CMakeFiles/code.dir/src/main.cpp.o: CXX_COMPILER__code_Debug /cygdrive/d/Documents/C++$ Projects/RISC-V-Simulator/src/main.cpp || cmake_object_order_depends_target_code
+  DEP_FILE = CMakeFiles/code.dir/src/main.cpp.o.d
   FLAGS = -g -std=gnu++14
   INCLUDES = -I"/cygdrive/d/Documents/C++ Projects/RISC-V-Simulator/src"
-  OBJECT_DIR = CMakeFiles/RISC_V_Simulator.dir
-  OBJECT_FILE_DIR = CMakeFiles/RISC_V_Simulator.dir/src
+  OBJECT_DIR = CMakeFiles/code.dir
+  OBJECT_FILE_DIR = CMakeFiles/code.dir/src
 
 
 # =============================================================================
-# Link build statements for EXECUTABLE target RISC_V_Simulator
+# Link build statements for EXECUTABLE target code
 
 
 #############################################
-# Link the executable RISC_V_Simulator.exe
+# Link the executable code.exe
 
-build RISC_V_Simulator.exe: CXX_EXECUTABLE_LINKER__RISC_V_Simulator_Debug CMakeFiles/stage.dir/src/stage.cpp.o CMakeFiles/RISC_V_Simulator.dir/src/main.cpp.o || stage
+build code.exe: CXX_EXECUTABLE_LINKER__code_Debug CMakeFiles/stage.dir/src/stage.cpp.o CMakeFiles/code.dir/src/main.cpp.o || stage
   FLAGS = -g
   LINK_FLAGS = -Wl,--enable-auto-import
-  OBJECT_DIR = CMakeFiles/RISC_V_Simulator.dir
+  OBJECT_DIR = CMakeFiles/code.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_FILE = RISC_V_Simulator.exe
-  TARGET_IMPLIB = libRISC_V_Simulator.dll.a
-  TARGET_PDB = RISC_V_Simulator.exe.dbg
+  TARGET_FILE = code.exe
+  TARGET_IMPLIB = libcode.dll.a
+  TARGET_PDB = code.exe.dbg
 
 
 #############################################
@@ -123,7 +123,7 @@ build stage: phony CMakeFiles/stage.dir/src/stage.cpp.o
 # =============================================================================
 # Target aliases.
 
-build RISC_V_Simulator: phony RISC_V_Simulator.exe
+build code: phony code.exe
 
 # =============================================================================
 # Folder targets.
@@ -133,7 +133,7 @@ build RISC_V_Simulator: phony RISC_V_Simulator.exe
 #############################################
 # Folder: /cygdrive/d/Documents/C++ Projects/RISC-V-Simulator/cmake-build-debug
 
-build all: phony RISC_V_Simulator.exe stage
+build all: phony code.exe stage
 
 # =============================================================================
 # Built-in targets

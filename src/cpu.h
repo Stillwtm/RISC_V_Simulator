@@ -7,6 +7,7 @@
 
 #include "utility.h"
 #include "stage.h"
+#include "predictor.h"
 
 class cpu {
     friend class Stage;
@@ -23,26 +24,48 @@ private:
     StageEX* EX;
     StageMEM* MEM;
     StageWB* WB;
+    Predictor predictor;
     u32 pc;
-    u8 MEM_BubbleCnt;
-    bool stallCnt;
+    u32 MEM_StallCnt;
+    u32 IF_ID_EX_Buffer_StallCnt;
     bool stopAll;
 
 private:
     void updateBuffer() {
+
+        // process stalling
+        if (MEM_StallCnt) return;
+//        if (IF_ID_EX_StallCnt) return;
+
+        // update pc
+        if (EX->nxtBuffer.jd != -1u) pc = EX->nxtBuffer.jd;
         // ID->IF->EX->MEM->WB
-        ID->preBuffer = IF->nxtBuffer;
-        EX->preBuffer = ID->nxtBuffer;
-        MEM->preBuffer = EX->nxtBuffer;
+        if (!IF_ID_EX_Buffer_StallCnt) {
+            ID->preBuffer = IF->nxtBuffer;
+            EX->preBuffer = ID->nxtBuffer;
+            MEM->preBuffer = EX->nxtBuffer;
+        }
         WB->preBuffer = MEM->nxtBuffer;
     }
 
     void updateUnit() {
+        if (MEM_StallCnt) return;
         IF->work();
         ID->work();
         EX->work();
         MEM->work();
         WB->work();
+    }
+
+    void updateStallCnt() {
+        if (MEM_StallCnt) {
+            MEM_StallCnt--;
+            return;
+        }
+        if (IF_ID_EX_Buffer_StallCnt) {
+            IF_ID_EX_Buffer_StallCnt--;
+            return;
+        }
     }
 
 public:
@@ -54,8 +77,8 @@ public:
             MEM(new StageMEM(this)),
             WB(new StageWB(this)),
             pc(0),
-            MEM_BubbleCnt(0),
-            stallCnt(false),
+            MEM_StallCnt(0),
+            IF_ID_EX_Buffer_StallCnt(0),
             stopAll(false) {
 
     }

@@ -18,18 +18,21 @@ protected:
 
     struct ID_EX_Buffer {
         u32 ins, rv1, rv2, insCode, imm;
-        u8 rd;
+        u32 rs1, rs2, rd;
     };
 
     struct EX_MEM_Buffer {
-        u32 insCode, res1, rv2;
+        u32 insCode;
+        u32 res1;  // 指令计算出的结果
+        u32 rv2;
         u32 jd;  // jump direction
-        u8 rd;
+        u32 rd;
     };
 
     struct MEM_WB_Buffer {
-        u32 insCode, res;
-        u8 rd;
+        u32 insCode;
+        u32 res;  // 要写入rd的结果
+        u32 rd;
     };
 
     cpu* ctx;
@@ -52,8 +55,8 @@ public:
 class StageID : public Stage {
     friend class cpu;
 private:
-    IF_ID_Buffer preBuffer;
-    ID_EX_Buffer nxtBuffer;
+    IF_ID_Buffer preBuffer;  // preBuffer是传统意义上的Buffer
+    ID_EX_Buffer nxtBuffer;  // nxtBuffer是为了模拟实现造的Buffer，或许是wire?
 public:
     StageID(cpu* _ctx = nullptr) : Stage(_ctx), preBuffer{}, nxtBuffer{} { }
     virtual void work();
@@ -71,6 +74,7 @@ public:
 
 class StageMEM : public Stage {
     friend class cpu;
+    friend class StageEX;
 private:
     EX_MEM_Buffer preBuffer;
     MEM_WB_Buffer nxtBuffer;
@@ -81,6 +85,7 @@ public:
 
 class StageWB : public Stage {
     friend class cpu;
+    friend class StageEX;
 private:
     MEM_WB_Buffer preBuffer;
 public:

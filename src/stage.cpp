@@ -13,6 +13,7 @@ void StageIF::work() {
 
     nxtBuffer.ins = ctx->memory->get4Byte(ctx->pc);
 
+
 #ifdef DEBUG_IF
     std::cout << std::hex << ctx->pc << "   " << nxtBuffer.ins << std::endl;
 //    if (ctx->pc == 0x1024) {
@@ -24,31 +25,47 @@ void StageIF::work() {
 
 void StageID::work() {
     INSTRUCTION::Instruction insObj(preBuffer.ins);
-    insObj.init();
     insObj.getCategory();
     insObj.getImm();
     nxtBuffer.ins = preBuffer.ins;
     nxtBuffer.imm = insObj.imm;
     nxtBuffer.insCode = insObj.insCode;
-    nxtBuffer.rd = insObj.rd;
+    // set rd
+    switch (insObj.type) {
+        case INSTRUCTION::R:
+        case INSTRUCTION::I:
+        case INSTRUCTION::U:
+        case INSTRUCTION::UJ:
+            nxtBuffer.rd = insObj.rd;
+            break;
+        default:
+            nxtBuffer.rd = -1u;
+            break;
+    }
+    // set rv1
     switch (insObj.type) {
         case INSTRUCTION::R:
         case INSTRUCTION::I:
         case INSTRUCTION::S:
         case INSTRUCTION::B:
+            nxtBuffer.rs1 = insObj.rs1;
             nxtBuffer.rv1 = ctx->reg->at(insObj.rs1);
             break;
         default:
+            nxtBuffer.rs1 = -1u;
             nxtBuffer.rv1 = -1u;
             break;
     }
+    // set rv2
     switch (insObj.type) {
         case INSTRUCTION::R:
         case INSTRUCTION::S:
         case INSTRUCTION::B:
+            nxtBuffer.rs2 = insObj.rs2;
             nxtBuffer.rv2 = ctx->reg->at(insObj.rs2);
             break;
         default:
+            nxtBuffer.rs2 = -1u;
             nxtBuffer.rv2 = -1u;
             break;
     }
@@ -63,7 +80,7 @@ void StageID::work() {
 void StageEX::work() {
     using namespace INSTRUCTION;
 
-    // 退出
+    // 退出 TODO 是否要更换位置
     if (preBuffer.ins == 0x0ff00513u) {
         std::cout << std::dec << (ctx->reg->at(10) & 0xffu) << std::endl;
         ctx->stopAll = true;
@@ -71,12 +88,43 @@ void StageEX::work() {
 
     nxtBuffer.insCode = preBuffer.insCode;
     nxtBuffer.rd = preBuffer.rd;
-    nxtBuffer.rv2 = preBuffer.rv2;
     nxtBuffer.jd = -1u;  // 表示没有跳转
 
-    u32 rv1 = preBuffer.rv1;
     u32 imm = preBuffer.imm;
+
+    u32 rv1 = preBuffer.rv1;
+    // forwarding1: get data from MEM/WB Buffer
+    if (ctx->WB->preBuffer.rd == preBuffer.rs1) {
+        rv1 = ctx->WB->preBuffer.res;
+    }
+    // forwarding2: get data from EX/MEM Buffer
+    if (ctx->MEM->preBuffer.rd == preBuffer.rs1) {
+        if (Instruction::isLoadIns(ctx->MEM->preBuffer.insCode)) {
+            // TODO stall IF,ID,EX till after MEM finish
+            // 设定ctx.IFIDEX_flag = true;
+            // 事实上在这个clock IDIF可以正常做，只要下个上升沿的时候不更新前三个buffer即可
+            ctx->IF_ID_EX_Buffer_StallCnt = 1;
+        } else {
+            rv1 = ctx->MEM->preBuffer.res1;
+        }
+    }
+
     u32 rv2 = preBuffer.rv2;
+    // forwarding1: get data from MEM/WB Buffer
+    if (ctx->WB->preBuffer.rd == preBuffer.rs2) {
+        rv2 = ctx->WB->preBuffer.res;
+    }
+    // forwarding2: get data from EX/MEM Buffer
+    if (ctx->MEM->preBuffer.rd == preBuffer.rs2) {
+        if (Instruction::isLoadIns(ctx->MEM->preBuffer.insCode)) {
+            ctx->IF_ID_EX_Buffer_StallCnt = 1;
+        } else {
+            rv2 = ctx->MEM->preBuffer.res1;
+        }
+    }
+
+
+    nxtBuffer.rv2 = preBuffer.rv2;  // TODO
 
     switch (preBuffer.insCode) {
         case LB:
@@ -113,7 +161,7 @@ void StageEX::work() {
         case ANDI:
             nxtBuffer.res1 = rv1 & imm;
             break;
-        case JALR:  // TODO: a strange command
+        case JALR:
             nxtBuffer.res1 = ctx->pc + 4;
             nxtBuffer.jd = (rv1 + imm) & (~1u);
             break;
@@ -197,6 +245,7 @@ void StageMEM::work() {
     debugPrint("MEM: memPos:", preBuffer.res1);
 #endif
 
+    ctx->MEM_StallCnt = 2;
     switch (preBuffer.insCode) {
         case LB:
             nxtBuffer.res = ctx->memory->at(preBuffer.res1);
@@ -223,6 +272,7 @@ void StageMEM::work() {
             ctx->memory->set4Byte(preBuffer.res1, preBuffer.rv2);
             break;
         default:
+            ctx->MEM_StallCnt = 0;
             nxtBuffer.res = preBuffer.res1;
             break;
     }

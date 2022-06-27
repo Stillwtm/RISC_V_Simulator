@@ -6,8 +6,22 @@
 #define RISC_V_SIMULATOR_PREDICTOR_H
 
 
-class predictor {
+#include "utility.h"
 
+class Predictor {
+private:
+
+public:
+    Predictor() { }
+    ~Predictor() { }
+
+    void predictPC(u32 ins) {
+
+    }
+
+    void update() {
+
+    }
 };
 
 

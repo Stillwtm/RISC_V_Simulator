@@ -68,9 +68,13 @@ namespace INSTRUCTION {
         u32 insCode, imm;
         InsCategory type;
     public:
-        Instruction(u32 _ins = 0) : ins(_ins), imm(0) { }
+        static bool isLoadIns(u32 insCode) {
+            return insCode == LB || insCode == LH || insCode == LW ||
+                    insCode == LBU || insCode == LHU;
+        }
 
-        void init() {
+    public:
+        Instruction(u32 _ins = 0) : ins(_ins), imm(0) {
             opcode = (ins & 0x0000007fu);
             rd = (ins & 0x00000f80u) >> 7;
             funct3 = (ins & 0x00007000u) >> 12;
@@ -118,7 +122,6 @@ namespace INSTRUCTION {
             }
         }
 
-        // TODO 关于符号位的扩展
         void getImm() {
             int32_t insi = static_cast<int32_t>(ins);
             switch (type) {

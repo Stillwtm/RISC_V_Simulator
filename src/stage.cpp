@@ -5,14 +5,14 @@
 #include "stage.h"
 #include "cpu.h"
 
-//#define DEBUG_IF
-//#define DEBUG_ID
+#define DEBUG_IF
+#define DEBUG_ID
 //#define DEBUG_MEM
 
 void StageIF::work() {
-
+    nxtBuffer.pc = ctx->pc;
     nxtBuffer.ins = ctx->memory->get4Byte(ctx->pc);
-
+    nxtBuffer.predPc = ctx->predictor.predictPC(ctx->pc, nxtBuffer.ins);
 
 #ifdef DEBUG_IF
     std::cout << std::hex << ctx->pc << "   " << nxtBuffer.ins << std::endl;
@@ -28,6 +28,8 @@ void StageID::work() {
     insObj.getCategory();
     insObj.getImm();
     nxtBuffer.ins = preBuffer.ins;
+    nxtBuffer.pc = preBuffer.pc;
+    nxtBuffer.predPc = preBuffer.predPc;
     nxtBuffer.imm = insObj.imm;
     nxtBuffer.insCode = insObj.insCode;
     // set rd
@@ -88,7 +90,7 @@ void StageEX::work() {
 
     nxtBuffer.insCode = preBuffer.insCode;
     nxtBuffer.rd = preBuffer.rd;
-    nxtBuffer.jd = -1u;  // 表示没有跳转
+    nxtBuffer.jd = preBuffer.pc + 4;  // 默认没有跳转
 
     u32 imm = preBuffer.imm;
 
@@ -99,7 +101,7 @@ void StageEX::work() {
     }
     // forwarding2: get data from EX/MEM Buffer
     if (ctx->MEM->preBuffer.rd == preBuffer.rs1) {
-        if (Instruction::isLoadIns(ctx->MEM->preBuffer.insCode)) {
+        if (Instruction::isLoadInsCode(ctx->MEM->preBuffer.insCode)) {
             // TODO stall IF,ID,EX till after MEM finish
             // 设定ctx.IFIDEX_flag = true;
             // 事实上在这个clock IDIF可以正常做，只要下个上升沿的时候不更新前三个buffer即可
@@ -116,16 +118,16 @@ void StageEX::work() {
     }
     // forwarding2: get data from EX/MEM Buffer
     if (ctx->MEM->preBuffer.rd == preBuffer.rs2) {
-        if (Instruction::isLoadIns(ctx->MEM->preBuffer.insCode)) {
+        if (Instruction::isLoadInsCode(ctx->MEM->preBuffer.insCode)) {
             ctx->IF_ID_EX_Buffer_StallCnt = 1;
         } else {
             rv2 = ctx->MEM->preBuffer.res1;
         }
     }
 
+    nxtBuffer.rv2 = rv2;  // TODO
 
-    nxtBuffer.rv2 = preBuffer.rv2;  // TODO
-
+    bool isBranchTaken = false;
     switch (preBuffer.insCode) {
         case LB:
         case LH:
@@ -201,22 +203,22 @@ void StageEX::work() {
             nxtBuffer.res1 = rv1 & rv2;
             break;
         case BEQ:
-            if (rv1 == rv2) nxtBuffer.jd = ctx->pc + imm;
+            if (rv1 == rv2) isBranchTaken = true, nxtBuffer.jd = ctx->pc + imm;
             break;
         case BNE:
-            if (rv1 != rv2) nxtBuffer.jd = ctx->pc + imm;
+            if (rv1 != rv2) isBranchTaken = true, nxtBuffer.jd = ctx->pc + imm;
             break;
         case BLT:
-            if ((i32)rv1 < (i32)rv2) nxtBuffer.jd = ctx->pc + imm;
+            if ((i32)rv1 < (i32)rv2) isBranchTaken = true, nxtBuffer.jd = ctx->pc + imm;
             break;
         case BGE:
-            if ((i32)rv1 >= (i32)rv2) nxtBuffer.jd = ctx->pc + imm;
+            if ((i32)rv1 >= (i32)rv2) isBranchTaken = true, nxtBuffer.jd = ctx->pc + imm;
             break;
         case BLTU:
-            if ((u32)rv1 < (u32)rv2) nxtBuffer.jd = ctx->pc + imm;
+            if ((u32)rv1 < (u32)rv2) isBranchTaken = true, nxtBuffer.jd = ctx->pc + imm;
             break;
         case BGEU:
-            if ((u32)rv1 >= (u32)rv2) nxtBuffer.jd = ctx->pc + imm;
+            if ((u32)rv1 >= (u32)rv2) isBranchTaken = true, nxtBuffer.jd = ctx->pc + imm;
             break;
         case AUIPC:
             nxtBuffer.res1 = ctx->pc + (imm << 12);
@@ -233,6 +235,10 @@ void StageEX::work() {
 //            exit(1);
             break;
     }
+
+    // update predictor & pc
+    ctx->jumpOrBranchWrong = (preBuffer.predPc != nxtBuffer.jd);
+    ctx->predictor.update(preBuffer.ins, nxtBuffer.jd, isBranchTaken, !ctx->jumpOrBranchWrong);
 }
 
 void StageMEM::work() {
@@ -275,13 +281,6 @@ void StageMEM::work() {
             ctx->MEM_StallCnt = 0;
             nxtBuffer.res = preBuffer.res1;
             break;
-    }
-
-    // update pc
-    if (preBuffer.jd != -1u) {
-        ctx->pc = preBuffer.jd;
-    } else {
-        ctx->pc += 4;
     }
 }
 

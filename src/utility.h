@@ -17,11 +17,12 @@ typedef int32_t i32;
 namespace INSTRUCTION {
 
     enum InsCategory {
-        I, U, S, R, B, UJ
+        I, U, S, R, B, UJ, NONE
     };
 
     enum InsCode {
         // [funct7-funct3-opcode]
+        BUBBLE = 0,
         LB = (0b0000011) | (0b000 << 7),
         LH = (0b0000011) | (0b001 << 7),
         LW = (0b0000011) | (0b010 << 7),
@@ -68,9 +69,13 @@ namespace INSTRUCTION {
         u32 insCode, imm;
         InsCategory type;
     public:
-        static bool isLoadIns(u32 insCode) {
+        static bool isLoadInsCode(u32 insCode) {
             return insCode == LB || insCode == LH || insCode == LW ||
                     insCode == LBU || insCode == LHU;
+        }
+
+        static bool isBranchIns(u32 ins) {
+            return (ins & 0x7f) == 0b1100011u;
         }
 
     public:
@@ -115,6 +120,8 @@ namespace INSTRUCTION {
                     insCode = opcode;
                     break;
                 default:
+                    type = NONE;
+                    insCode = BUBBLE;
 //                    std::cout << "error in ins Category:" << std::hex << (u32)opcode << std::endl;
 //                    std::cerr << "error in instruction category!" << std::endl;
 //                    exit(1);
@@ -151,6 +158,9 @@ namespace INSTRUCTION {
                             ((i32)(insi & 0x00100000) >> 9) |
                             (i32)(insi & 0x000ff000);
                     break;
+                case NONE:
+                    imm = 0;
+                    break;
             }
         }
     };
@@ -164,7 +174,7 @@ namespace STORAGE {
     protected:
         DataType data[Size];
     public:
-        Storage() : data({}) { }
+        Storage() : data() { }
         ~Storage() = default;
 
         void readFile(std::string& fileName) {

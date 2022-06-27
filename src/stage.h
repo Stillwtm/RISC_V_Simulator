@@ -14,11 +14,13 @@ class Stage {
 protected:
     struct IF_ID_Buffer {
         u32 ins;
+        u32 pc, predPc;
     };
 
     struct ID_EX_Buffer {
         u32 ins, rv1, rv2, insCode, imm;
         u32 rs1, rs2, rd;
+        u32 pc, predPc;
     };
 
     struct EX_MEM_Buffer {
@@ -27,12 +29,14 @@ protected:
         u32 rv2;
         u32 jd;  // jump direction
         u32 rd;
+        u32 pc, predPc;
     };
 
     struct MEM_WB_Buffer {
         u32 insCode;
         u32 res;  // 要写入rd的结果
         u32 rd;
+//        u32 pc, predPc;
     };
 
     cpu* ctx;

@@ -28,17 +28,26 @@ private:
     u32 pc;
     u32 MEM_StallCnt;
     u32 IF_ID_EX_Buffer_StallCnt;
+    bool jumpOrBranchWrong;
     bool stopAll;
 
 private:
-    void updateBuffer() {
+    void discard() {
+        // 相当于把后面的所有指令变空
+        IF->nxtBuffer.ins = 0;
+        ID->nxtBuffer.insCode = INSTRUCTION::BUBBLE;
+    }
 
+    void updateBuffer() {
         // process stalling
         if (MEM_StallCnt) return;
-//        if (IF_ID_EX_StallCnt) return;
-
         // update pc
-        if (EX->nxtBuffer.jd != -1u) pc = EX->nxtBuffer.jd;
+        if (jumpOrBranchWrong) {
+            pc = EX->nxtBuffer.jd;
+            discard();
+        } else {
+            pc = predictor.predPc;
+        }
         // ID->IF->EX->MEM->WB
         if (!IF_ID_EX_Buffer_StallCnt) {
             ID->preBuffer = IF->nxtBuffer;
@@ -76,9 +85,11 @@ public:
             EX(new StageEX(this)),
             MEM(new StageMEM(this)),
             WB(new StageWB(this)),
+            predictor(),
             pc(0),
             MEM_StallCnt(0),
             IF_ID_EX_Buffer_StallCnt(0),
+            jumpOrBranchWrong(false),
             stopAll(false) {
 
     }
@@ -98,24 +109,13 @@ public:
     }
 
     void run() {
+        debugPrint("cpu start running!");
         while (!stopAll) {
-            IF->work();
-            ID->preBuffer = IF->nxtBuffer;
-            ID->work();
-            EX->preBuffer = ID->nxtBuffer;
-            EX->work();
-            MEM->preBuffer = EX->nxtBuffer;
-            MEM->work();
-            WB->preBuffer = MEM->nxtBuffer;
-            WB->work();
+            updateBuffer();
+            updateUnit();
+            updateStallCnt();
         }
-//        debugPrint("stop All!");
-//            debugPrint(stage[1]->nxtBuffer.insCode, "  imm:", stage[1]->nxtBuffer.imm);
-
-//        while (!stopAll) {
-//            updateBuffer();
-//            updateUnit();
-//        }
+        debugPrint("stop All!");
     }
 };
 

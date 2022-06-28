@@ -28,6 +28,7 @@ public:
     ~Predictor() { }
 
     u32 predictPC(u32 pc, u32 ins) {
+        return predPc = pc + 4;
         totPred++;
         if (INSTRUCTION::Instruction::isBranchIns(ins) && bht[ins & 0xfffu] & 0b10u) {
             return predPc = btb[ins & 0xffu];

@@ -42,11 +42,13 @@ private:
         // process stalling
         if (MEM_StallCnt) return;
         // update pc
-        if (jumpOrBranchWrong) {
-            pc = EX->nxtBuffer.jd;
-            discard();
-        } else {
-            pc = predictor.predPc;
+        if (!IF_ID_EX_Buffer_StallCnt) {
+            if (jumpOrBranchWrong) {
+                pc = EX->nxtBuffer.jd;
+                discard();
+            } else {
+                pc = predictor.predPc;
+            }
         }
         // ID->IF->EX->MEM->WB
         if (!IF_ID_EX_Buffer_StallCnt) {
@@ -64,6 +66,7 @@ private:
         EX->work();
         MEM->work();
         WB->work();
+//        debugPrint("-------------");
     }
 
     void updateStallCnt() {
@@ -71,10 +74,10 @@ private:
             MEM_StallCnt--;
             return;
         }
-        if (IF_ID_EX_Buffer_StallCnt) {
-            IF_ID_EX_Buffer_StallCnt--;
-            return;
-        }
+//        if (IF_ID_EX_Buffer_StallCnt) {
+//            IF_ID_EX_Buffer_StallCnt--;
+//            return;
+//        }
     }
 
 public:

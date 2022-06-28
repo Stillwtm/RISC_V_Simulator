@@ -90,6 +90,7 @@ public:
 class StageWB : public Stage {
     friend class cpu;
     friend class StageEX;
+    friend class StageID;
 private:
     MEM_WB_Buffer preBuffer;
 public:

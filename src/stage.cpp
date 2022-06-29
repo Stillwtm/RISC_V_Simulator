@@ -31,6 +31,12 @@ void StageID::work() {
     nxtBuffer.predPc = preBuffer.predPc;
     nxtBuffer.imm = insObj.imm;
     nxtBuffer.insCode = insObj.insCode;
+    if (preBuffer.ins == 0) {
+#ifdef DEBUG_ID
+        debugPrint("ID:=== 0 ===");
+#endif
+        return;
+    }
     // set rd
     switch (insObj.type) {
         case INSTRUCTION::R:
@@ -58,7 +64,7 @@ void StageID::work() {
             break;
     }
     // forwarding: get data from MEM/WB Buffer
-    if (ctx->WB->preBuffer.rd == nxtBuffer.rs1) {
+    if (ctx->WB->preBuffer.rd == nxtBuffer.rs1 && nxtBuffer.rs1) {
         nxtBuffer.rv1 = ctx->WB->preBuffer.res;
     }
     // set rv2
@@ -75,7 +81,7 @@ void StageID::work() {
             break;
     }
     // forwarding: get data from MEM/WB Buffer
-    if (ctx->WB->preBuffer.rd == nxtBuffer.rs2) {
+    if (ctx->WB->preBuffer.rd == nxtBuffer.rs2 && nxtBuffer.rs2) {
         nxtBuffer.rv2 = ctx->WB->preBuffer.res;
     }
 
@@ -89,66 +95,73 @@ void StageID::work() {
 void StageEX::work() {
     using namespace INSTRUCTION;
 
-    if (preBuffer.insCode == BUBBLE) {
-        ctx->jumpOrBranchWrong = false;
-        return;  // TODO 是否合适？
-    }
-
-    // 退出 TODO 是否要更换位置
-    if (preBuffer.ins == 0x0ff00513u) {
-        std::cout << std::dec << (ctx->reg->at(10) & 0xffu) << std::endl;
-        ctx->stopAll = true;
-    }
-
+    nxtBuffer.ins = preBuffer.ins;
     nxtBuffer.insCode = preBuffer.insCode;
+    nxtBuffer.pc = preBuffer.pc;
     nxtBuffer.rd = preBuffer.rd;
+    nxtBuffer.res1 = 0;
+    nxtBuffer.rv2 = preBuffer.rv2;
     nxtBuffer.jd = preBuffer.pc + 4;  // 默认没有跳转
 
     u32 imm = preBuffer.imm;
 
+    if (preBuffer.insCode == BUBBLE) {
+#ifdef DEBUG_EX
+//        debugPrint("EX:===", preBuffer.pc, 0, "===");
+#endif
+        ctx->jumpOrBranchWrong = false;
+        return;  // TODO 是否合适？
+    }
+
     u32 rv1 = preBuffer.rv1;
-    // forwarding1: get data from MEM/WB Buffer
-    if (ctx->WB->preBuffer.rd == preBuffer.rs1) {
+    // forwarding1: get data from after WB
+    if (ctx->afterWB_Buffer.rd == preBuffer.rs1 && preBuffer.rs1) {
+        rv1 = ctx->afterWB_Buffer.res;
+    }
+    // forwarding2: get data from MEM/WB Buffer
+    if (ctx->WB->preBuffer.rd == preBuffer.rs1 && preBuffer.rs1) {
         rv1 = ctx->WB->preBuffer.res;
     }
-    // forwarding2: get data from EX/MEM Buffer
-    if (ctx->MEM->preBuffer.rd == preBuffer.rs1) {
+    // forwarding3: get data from EX/MEM Buffer
+    if (ctx->IF_ID_EX_Buffer_StallCnt == 1) {
+        ctx->IF_ID_EX_Buffer_StallCnt = 0;
+    }
+    if (ctx->MEM->preBuffer.rd == preBuffer.rs1 && preBuffer.rs1) {
         if (Instruction::isLoadInsCode(ctx->MEM->preBuffer.insCode)) {
             // TODO stall IF,ID,EX till after MEM finish
             // 设定ctx.IFIDEX_flag = true;
             // 事实上在这个clock IDIF可以正常做，只要下个上升沿的时候不更新前三个buffer即可
 #ifdef DEBUG_EX
-            debugPrint("  EX1:SET IF_ID_EX_Buffer_Stall_Flag = 1");
+//            debugPrint("  EX1:SET IF_ID_EX_Buffer_Stall_Flag = 1", ctx->IF_ID_EX_Buffer_StallCnt);
 #endif
-            if (ctx->IF_ID_EX_Buffer_StallCnt == 1) {
-                ctx->IF_ID_EX_Buffer_StallCnt = 0;
-            } else {
-                ctx->IF_ID_EX_Buffer_StallCnt = 1;
-                return;
-            }
+            ctx->IF_ID_EX_Buffer_StallCnt = 1;
+            return;
         } else {
             rv1 = ctx->MEM->preBuffer.res1;
         }
     }
 
     u32 rv2 = preBuffer.rv2;
-    // forwarding1: get data from MEM/WB Buffer
-    if (ctx->WB->preBuffer.rd == preBuffer.rs2) {
+    // forwarding1: get data from after WB
+    if (ctx->afterWB_Buffer.rd == preBuffer.rs2 && preBuffer.rs2) {
+        rv2 = ctx->afterWB_Buffer.res;
+    }
+    // forwarding2: get data from MEM/WB Buffer
+    if (ctx->WB->preBuffer.rd == preBuffer.rs2 && preBuffer.rs2) {
         rv2 = ctx->WB->preBuffer.res;
     }
-    // forwarding2: get data from EX/MEM Buffer
-    if (ctx->MEM->preBuffer.rd == preBuffer.rs2) {
+    // forwarding3: get data from EX/MEM Buffer
+    if (ctx->IF_ID_EX_Buffer_StallCnt == 1) {
+        ctx->IF_ID_EX_Buffer_StallCnt = 0;
+    }
+    if (ctx->MEM->preBuffer.rd == preBuffer.rs2 && preBuffer.rs2) {
         if (Instruction::isLoadInsCode(ctx->MEM->preBuffer.insCode)) {
 //            ctx->IF_ID_EX_Buffer_StallCnt = 1;
 #ifdef DEBUG_EX
-            debugPrint("  EX2:SET IF_ID_EX_Buffer_Stall_Flag = 1");
+//            debugPrint("  EX2:SET IF_ID_EX_Buffer_Stall_Flag = 1");
 #endif
-            if (ctx->IF_ID_EX_Buffer_StallCnt == 1) {
-                ctx->IF_ID_EX_Buffer_StallCnt = 0;
-            } else {
-                ctx->IF_ID_EX_Buffer_StallCnt = 1;
-                return;
-            }
+            ctx->IF_ID_EX_Buffer_StallCnt = 1;
+            return;
         } else {
             rv2 = ctx->MEM->preBuffer.res1;
         }
@@ -267,23 +280,31 @@ void StageEX::work() {
 
     // update predictor & pc
     ctx->jumpOrBranchWrong = (preBuffer.predPc != nxtBuffer.jd);
-    ctx->predictor.update(preBuffer.ins, nxtBuffer.jd, isBranchTaken, !ctx->jumpOrBranchWrong);
+    // if (isJump && jumpWrong)
+    ctx->predictor.update(preBuffer.ins, nxtBuffer.jd, isBranchTaken, !ctx->jumpOrBranchWrong);  // this is wrong
 
 #ifdef DEBUG_EX
-    debugPrint("EX:===", preBuffer.pc, "  ", preBuffer.ins, "==={", " jd: ", nxtBuffer.jd, " predPc:", preBuffer.predPc, " branchTaken:", isBranchTaken, "rv1:", rv1, "rv2:", rv2, "res1:", nxtBuffer.res1, " }");
+    debugPrint("EX:===", preBuffer.pc, "  ", preBuffer.ins, "==={", " jd: ", nxtBuffer.jd, " predPc:", preBuffer.predPc, "rv1:", rv1, "rv2:", rv2, "res1:", nxtBuffer.res1, " rd:", preBuffer.rd, " branchTaken:", isBranchTaken, " }");
 #endif
 }
 
 void StageMEM::work() {
     using namespace INSTRUCTION;
 
+    nxtBuffer.ins = preBuffer.ins;
     nxtBuffer.insCode = preBuffer.insCode;
     nxtBuffer.rd = preBuffer.rd;
+    ctx->MEM_StallCnt = 0;
 
-    if (preBuffer.insCode == BUBBLE) return;
+    if (preBuffer.insCode == BUBBLE) {
+#ifdef DEBUG_MEM
+        debugPrint("MEM:===", preBuffer.pc, "===", preBuffer.res1, preBuffer.jd, preBuffer.insCode, preBuffer.rv2, preBuffer.rd);
+#endif
+        return;
+    }
 
 #ifdef DEBUG_MEM
-    debugPrint("MEM: { memPos:", preBuffer.res1, "rv2:", preBuffer.rv2, "}");
+    debugPrint("MEM:===", preBuffer.pc, "==={ memPos:", preBuffer.res1, "rv2:", preBuffer.rv2, "}");
 #endif
 
     ctx->MEM_StallCnt = 2;
@@ -321,6 +342,15 @@ void StageMEM::work() {
 
 void StageWB::work() {
     using namespace INSTRUCTION;
+
+    // 退出 TODO 是否要更换位置
+    if (preBuffer.ins == 0x0ff00513u) {
+        std::cout << std::dec << (ctx->reg->at(10) & 0xffu) << std::endl;
+        ctx->stopAll = true;
+    }
+
+    nxtBuffer.rd = preBuffer.rd;
+    nxtBuffer.res = preBuffer.res;
 
     if (preBuffer.insCode == BUBBLE) return;
 

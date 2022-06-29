@@ -15,28 +15,45 @@ protected:
     struct IF_ID_Buffer {
         u32 ins;
         u32 pc, predPc;
+        void clear() { ins = pc = predPc = 0; }
     };
 
     struct ID_EX_Buffer {
         u32 ins, rv1, rv2, insCode, imm;
         u32 rs1, rs2, rd;
         u32 pc, predPc;
+        void clear() {
+            ins = rv1 = rv2 = insCode = imm = pc = predPc = 0;
+            rs1 = rs2 = rd = -1u;
+        }
     };
 
     struct EX_MEM_Buffer {
-        u32 insCode;
+        u32 ins, insCode;
         u32 res1;  // 指令计算出的结果
         u32 rv2;
         u32 jd;  // jump direction
         u32 rd;
         u32 pc, predPc;
+        void clear() {
+            insCode = res1 = rv2 = jd = pc = predPc = 0;
+            rd = -1u;
+        }
     };
 
     struct MEM_WB_Buffer {
-        u32 insCode;
+        u32 ins, insCode;
         u32 res;  // 要写入rd的结果
         u32 rd;
 //        u32 pc, predPc;
+        void clear() {
+            insCode = res = 0;
+            rd = -1u;
+        }
+    };
+
+    struct AFTER_WB_Buffer {
+        u32 rd, res;
     };
 
     cpu* ctx;
@@ -79,6 +96,7 @@ public:
 class StageMEM : public Stage {
     friend class cpu;
     friend class StageEX;
+    friend class StageID;
 private:
     EX_MEM_Buffer preBuffer;
     MEM_WB_Buffer nxtBuffer;
@@ -93,8 +111,9 @@ class StageWB : public Stage {
     friend class StageID;
 private:
     MEM_WB_Buffer preBuffer;
+    AFTER_WB_Buffer nxtBuffer;
 public:
-    StageWB(cpu* _ctx = nullptr) : Stage(_ctx), preBuffer{} { }
+    StageWB(cpu* _ctx = nullptr) : Stage(_ctx), preBuffer{}, nxtBuffer{} { }
     virtual void work();
 };
 

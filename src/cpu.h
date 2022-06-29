@@ -24,6 +24,7 @@ private:
     StageEX* EX;
     StageMEM* MEM;
     StageWB* WB;
+    Stage::AFTER_WB_Buffer afterWB_Buffer;
     Predictor predictor;
     u32 pc;
     u32 MEM_StallCnt;
@@ -34,8 +35,13 @@ private:
 private:
     void discard() {
         // 相当于把后面的所有指令变空
-        IF->nxtBuffer.ins = 0;
-        ID->nxtBuffer.insCode = INSTRUCTION::BUBBLE;
+//        IF->nxtBuffer = Stage::IF_ID_Buffer{};
+//        ID->nxtBuffer = Stage::ID_EX_Buffer{};
+        IF->nxtBuffer.clear();
+        ID->nxtBuffer.clear();
+//        IF->nxtBuffer.ins = 0;
+//        ID->nxtBuffer.ins = 0;
+//        ID->nxtBuffer.insCode = INSTRUCTION::BUBBLE;
     }
 
     void updateBuffer() {
@@ -55,8 +61,11 @@ private:
             ID->preBuffer = IF->nxtBuffer;
             EX->preBuffer = ID->nxtBuffer;
             MEM->preBuffer = EX->nxtBuffer;
+        } else {
+            MEM->preBuffer.clear();
         }
         WB->preBuffer = MEM->nxtBuffer;
+        afterWB_Buffer = WB->nxtBuffer;
     }
 
     void updateUnit() {
@@ -72,10 +81,12 @@ private:
     void updateStallCnt() {
         if (MEM_StallCnt) {
             MEM_StallCnt--;
+//            if (!MEM_StallCnt) IF_ID_EX_Buffer_StallCnt--;
             return;
         }
 //        if (IF_ID_EX_Buffer_StallCnt) {
 //            IF_ID_EX_Buffer_StallCnt--;
+//            debugPrint("in dec:", IF_ID_EX_Buffer_StallCnt);
 //            return;
 //        }
     }
@@ -88,6 +99,7 @@ public:
             EX(new StageEX(this)),
             MEM(new StageMEM(this)),
             WB(new StageWB(this)),
+            afterWB_Buffer{},
             predictor(),
             pc(0),
             MEM_StallCnt(0),
@@ -112,13 +124,13 @@ public:
     }
 
     void run() {
-        debugPrint("cpu start running!");
+//        debugPrint("cpu start running!");
         while (!stopAll) {
             updateBuffer();
             updateUnit();
             updateStallCnt();
         }
-        debugPrint("stop All!");
+//        debugPrint("stop All!");
     }
 };
 

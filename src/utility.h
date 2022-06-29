@@ -253,7 +253,7 @@ void debugPrint(const T& t) {
 
 template<typename T, typename...Args>
 void debugPrint(const T& t, const Args&...rest) {
-    std::cout << t << " ";
+    std::cout << std::hex << t << " ";
     debugPrint(rest...);
 }
 

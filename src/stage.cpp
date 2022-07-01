@@ -3,13 +3,14 @@
 //
 
 #include "stage.h"
-#include "cpu.h"
+#include "cpu.hpp"
 
 //#define DEBUG_IF
 //#define DEBUG_ID
 //#define DEBUG_EX
 //#define DEBUG_MEM
 //#define DEBUG_WB
+#define SHOW_ANS
 
 void StageIF::work() {
     nxtBuffer.pc = ctx->pc;
@@ -110,7 +111,7 @@ void StageEX::work() {
 //        debugPrint("EX:===", preBuffer.pc, 0, "===");
 #endif
         ctx->jumpOrBranchWrong = false;
-        return;  // TODO 是否合适？
+        return;
     }
 
     u32 rv1 = preBuffer.rv1;
@@ -128,7 +129,6 @@ void StageEX::work() {
     }
     if (ctx->MEM->preBuffer.rd == preBuffer.rs1 && preBuffer.rs1) {
         if (Instruction::isLoadInsCode(ctx->MEM->preBuffer.insCode)) {
-            // TODO stall IF,ID,EX till after MEM finish
             // 设定ctx.IFIDEX_flag = true;
             // 事实上在这个clock IDIF可以正常做，只要下个上升沿的时候不更新前三个buffer即可
 #ifdef DEBUG_EX
@@ -167,7 +167,7 @@ void StageEX::work() {
         }
     }
 
-    nxtBuffer.rv2 = rv2;  // TODO
+    nxtBuffer.rv2 = rv2;
 
     bool isBranchTaken = false;
     switch (preBuffer.insCode) {
@@ -263,7 +263,7 @@ void StageEX::work() {
             if ((u32)rv1 >= (u32)rv2) isBranchTaken = true, nxtBuffer.jd = preBuffer.pc + imm;
             break;
         case AUIPC:
-            nxtBuffer.res1 = preBuffer.pc + (imm << 12);  // TODO 此处是否应吧ctx.pc换成preBuffer.pc
+            nxtBuffer.res1 = preBuffer.pc + (imm << 12);
             break;
         case LUI:
             nxtBuffer.res1 = imm << 12;
@@ -278,10 +278,11 @@ void StageEX::work() {
             break;
     }
 
-    // update predictor & pc
+    // update predictor
     ctx->jumpOrBranchWrong = (preBuffer.predPc != nxtBuffer.jd);
-    // if (isJump && jumpWrong)
-    ctx->predictor.update(preBuffer.ins, nxtBuffer.jd, isBranchTaken, !ctx->jumpOrBranchWrong);  // this is wrong
+    if (Instruction::isBranchIns(preBuffer.ins)) {
+        ctx->predictor.update(preBuffer.pc, nxtBuffer.jd, isBranchTaken, !ctx->jumpOrBranchWrong);
+    }
 
 #ifdef DEBUG_EX
     debugPrint("EX:===", preBuffer.pc, "  ", preBuffer.ins, "==={", " jd: ", nxtBuffer.jd, " predPc:", preBuffer.predPc, "rv1:", rv1, "rv2:", rv2, "res1:", nxtBuffer.res1, " rd:", preBuffer.rd, " branchTaken:", isBranchTaken, " }");
@@ -307,7 +308,7 @@ void StageMEM::work() {
     debugPrint("MEM:===", preBuffer.pc, "==={ memPos:", preBuffer.res1, "rv2:", preBuffer.rv2, "}");
 #endif
 
-    ctx->MEM_StallCnt = 2;
+    ctx->MEM_StallCnt = 3;
     switch (preBuffer.insCode) {
         case LB:
             nxtBuffer.res = ctx->memory->at(preBuffer.res1);
@@ -343,9 +344,10 @@ void StageMEM::work() {
 void StageWB::work() {
     using namespace INSTRUCTION;
 
-    // 退出 TODO 是否要更换位置
     if (preBuffer.ins == 0x0ff00513u) {
+#ifdef SHOW_ANS
         std::cout << std::dec << (ctx->reg->at(10) & 0xffu) << std::endl;
+#endif
         ctx->stopAll = true;
     }
 
@@ -385,11 +387,10 @@ void StageWB::work() {
         case JAL:
             if (preBuffer.rd) {
                 ctx->reg->modify(preBuffer.rd, preBuffer.res);
-#ifdef DEBUG_WB
-                debugPrint("WB:{", "rd:", preBuffer.rd, " res:", preBuffer.res);
-#endif
-//                debugPrint("WB:reg modified:", "rd:", (u32)preBuffer.rd, " res:", (u32)preBuffer.res);
             }
+#ifdef DEBUG_WB
+            debugPrint("WB:{", "rd:", preBuffer.rd, " res:", preBuffer.res);
+#endif
             break;
         default:
 #ifdef DEBUG_WB

@@ -7,7 +7,9 @@
 
 #include "utility.h"
 #include "stage.h"
-#include "predictor.h"
+#include "predictor.hpp"
+
+//#define SHOW_RESULT
 
 class cpu {
     friend class Stage;
@@ -31,17 +33,13 @@ private:
     u32 IF_ID_EX_Buffer_StallCnt;
     bool jumpOrBranchWrong;
     bool stopAll;
+    u32 clk;
 
 private:
     void discard() {
         // 相当于把后面的所有指令变空
-//        IF->nxtBuffer = Stage::IF_ID_Buffer{};
-//        ID->nxtBuffer = Stage::ID_EX_Buffer{};
         IF->nxtBuffer.clear();
         ID->nxtBuffer.clear();
-//        IF->nxtBuffer.ins = 0;
-//        ID->nxtBuffer.ins = 0;
-//        ID->nxtBuffer.insCode = INSTRUCTION::BUBBLE;
     }
 
     void updateBuffer() {
@@ -75,20 +73,13 @@ private:
         EX->work();
         MEM->work();
         WB->work();
-//        debugPrint("-------------");
     }
 
     void updateStallCnt() {
         if (MEM_StallCnt) {
             MEM_StallCnt--;
-//            if (!MEM_StallCnt) IF_ID_EX_Buffer_StallCnt--;
             return;
         }
-//        if (IF_ID_EX_Buffer_StallCnt) {
-//            IF_ID_EX_Buffer_StallCnt--;
-//            debugPrint("in dec:", IF_ID_EX_Buffer_StallCnt);
-//            return;
-//        }
     }
 
 public:
@@ -105,9 +96,8 @@ public:
             MEM_StallCnt(0),
             IF_ID_EX_Buffer_StallCnt(0),
             jumpOrBranchWrong(false),
-            stopAll(false) {
-
-    }
+            stopAll(false),
+            clk(0) { }
 
     ~cpu() {
         delete memory;
@@ -125,12 +115,22 @@ public:
 
     void run() {
 //        debugPrint("cpu start running!");
+        clk = 0;
         while (!stopAll) {
+            clk++;
             updateBuffer();
             updateUnit();
             updateStallCnt();
         }
 //        debugPrint("stop All!");
+#ifdef SHOW_RESULT
+        debugPrint("clock:", clk);
+        debugPrint("totPred:", predictor.totPred, "success:", predictor.goodPred);
+        debugPrint("success rate:", (double)predictor.goodPred / predictor.totPred);
+        std::cout << clk << std::endl;
+        std::cout << "local:" << predictor.localCnt << "  global:" << predictor.globalCnt << std::endl;
+        std::cout << (double)predictor.goodPred / predictor.totPred << '\t' << predictor.goodPred << '\t' << predictor.totPred << std::endl;
+#endif
     }
 };
 

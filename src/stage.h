@@ -45,7 +45,6 @@ protected:
         u32 ins, insCode;
         u32 res;  // 要写入rd的结果
         u32 rd;
-//        u32 pc, predPc;
         void clear() {
             insCode = res = 0;
             rd = -1u;

@@ -5,7 +5,6 @@
 #ifndef RISC_V_SIMULATOR_UTILITY_H
 #define RISC_V_SIMULATOR_UTILITY_H
 
-
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -75,7 +74,7 @@ namespace INSTRUCTION {
         }
 
         static bool isBranchIns(u32 ins) {
-            return (ins & 0x7f) == 0b1100011u;
+            return (ins & 0x7fu) == 0b1100011u;
         }
 
     public:
@@ -122,9 +121,6 @@ namespace INSTRUCTION {
                 default:
                     type = NONE;
                     insCode = BUBBLE;
-//                    std::cout << "error in ins Category:" << std::hex << (u32)opcode << std::endl;
-//                    std::cerr << "error in instruction category!" << std::endl;
-//                    exit(1);
                     break;
             }
         }
@@ -186,8 +182,6 @@ namespace STORAGE {
             std::string inStr;
             u32 pos = 0;
             while (!(inStream >> inStr).eof()) {
-//                std::cout << pos << " ";
-//                std::cout << inStr << std::endl;
                 if (inStr[0] == '@') {
                     pos = std::stoul(inStr.substr(1, 8), nullptr, 16);
                 } else {
@@ -253,7 +247,7 @@ void debugPrint(const T& t) {
 
 template<typename T, typename...Args>
 void debugPrint(const T& t, const Args&...rest) {
-    std::cout << std::hex << t << " ";
+    std::cout << t << " ";
     debugPrint(rest...);
 }
 

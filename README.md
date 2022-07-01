@@ -6,7 +6,7 @@
 
 ### 五级流水架构图
 
-<img src="C:/Users/StillMe/AppData/Roaming/Typora/typora-user-images/image-20220701172039670.png" alt="image-20220701172039670" style="zoom:25%;" />
+<img src="https://s2.loli.net/2022/07/01/ofnHq6XTsdB9eFz.png" alt="image-20220701172039670" style="zoom:25%;" />
 
 ### 模拟方式
 
